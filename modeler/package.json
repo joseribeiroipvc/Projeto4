@@ -5,7 +5,7 @@
   "scripts": {
     "all": "run-s lint build",
     "build": "webpack --mode production",
-    "dev": "webpack-dev-server --content-base=public --open",
+    "dev": "cross-env NODE_OPTIONS=--openssl-legacy-provider webpack-dev-server --content-base=public --open",
     "lint": "eslint .",
     "start": "run-s dev"
   },
@@ -29,6 +29,7 @@
   "license": "MIT",
   "devDependencies": {
     "copy-webpack-plugin": "^4.6.0",
+    "cross-env": "^7.0.3",
     "eslint": "^5.0.1",
     "eslint-plugin-bpmn-io": "^0.5.3",
     "npm-run-all": "^4.1.3",

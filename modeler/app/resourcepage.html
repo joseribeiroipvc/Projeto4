@@ -444,12 +444,81 @@ function download(filename, text) {
   document.body.removeChild(element);
 }
 
-function downloadContract(){
-  console.log(assetArray)
-  download("assets.txt", JSON.stringify(assetArray));
-  download("participant.txt", JSON.stringify(participantArray));
-  download("task.txt", JSON.stringify(taskArray));
+function downloadContract() {
+  const filename = prompt("Insere o nome do ficheiro do contrato:", "BPMNContract");
+
+  if (!filename) {
+    alert("Nome do ficheiro não fornecido.");
+    return;
+  }
+
+  const contractCode = generateChaincode(taskArray, participantArray, assetArray);
+  const blob = new Blob([contractCode], { type: "text/javascript" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${filename}.js`;
+  link.click();
+
+  URL.revokeObjectURL(url);
 }
+
+
+function generateChaincode(taskArray, participantArray, assetArray) {
+  let code = `'use strict';\n\n`;
+  code += `const { Contract } = require('fabric-contract-api');\n\n`;
+  code += `class BPMNContract extends Contract {\n\n`;
+
+  // Criar participantes
+  participantArray.forEach(part => {
+    const partName = part.name ? part.name.replace(/\s+/g, '') : 'UnnamedParticipant';
+    code += `  async create${partName}(ctx) {\n`;
+    code += `    const participant = {\n`;
+    code += `      id: '${part.id}',\n`;
+    code += `      name: '${part.name}'\n`;
+    code += `    };\n`;
+    code += `    await ctx.stub.putState('${part.id}', Buffer.from(JSON.stringify(participant)));\n`;
+    code += `    return JSON.stringify(participant);\n`;
+    code += `  }\n\n`;
+  });
+
+  // Criar assets
+  assetArray.forEach(asset => {
+    const assetName = asset.name && asset.name !== 'null' ? asset.name.replace(/\s+/g, '') : 'UnnamedAsset';
+    code += `  async create${assetName}(ctx) {\n`;
+    code += `    const asset = {\n`;
+    code += `      id: '${asset.id}',\n`;
+    code += `      name: '${asset.name}'\n`;
+    code += `    };\n`;
+    code += `    await ctx.stub.putState('${asset.id}', Buffer.from(JSON.stringify(asset)));\n`;
+    code += `    return JSON.stringify(asset);\n`;
+    code += `  }\n\n`;
+  });
+
+  // Criar métodos das tasks
+  taskArray.forEach(task => {
+    const taskName = task.name ? task.name.replace(/\s+/g, '') : 'UnnamedTask';
+    const participant = task.participant || 'UnknownOrg';
+    const datastore = task.datastores || 'N/A';
+    const typedatastore = task.typedatastore || '';
+
+    code += `  async ${taskName}(ctx) {\n`;
+    code += `    // Task: ${task.name} executada por ${participant}\n`;
+    if (datastore !== 'N/A') {
+      code += `    // Ação sobre o datastore (${typedatastore}): ${datastore}\n`;
+    }
+    code += `    console.log("${participant} executa ${task.name}");\n`;
+    code += `    return true;\n`;
+    code += `  }\n\n`;
+  });
+
+  code += `}\n\nmodule.exports = BPMNContract;\n`;
+
+  return code;
+}
+
+
 
 
 

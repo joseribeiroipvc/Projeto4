@@ -167,6 +167,18 @@ $(function() {
   var downloadSvgLink = $('#js-download-svg');
   var downloadSmart = $('#js-process-smart-contract');
 
+
+ $('#js-process-smart-contract').click(function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+
+  // Apenas redireciona para a página onde o contrato será gerado
+  window.location.href = "resourcepage.html";
+});
+
+
+
+
   $('.buttons a').click(function(e) {
     if (!$(this).is('.active')) {
       e.preventDefault();
@@ -213,6 +225,8 @@ $(function() {
 
   modeler.on('commandStack.changed', exportArtifacts);
 });
+
+
 
 
 

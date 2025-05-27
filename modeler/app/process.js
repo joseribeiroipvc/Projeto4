@@ -194,6 +194,8 @@ console.log(participantArray);
 
 } );
 
+
+
 //
 //
 //
@@ -337,6 +339,62 @@ console.log(taskArray);
 
     
 } );
+
+
+function generateChaincode(taskArray, participantArray, assetArray) {
+  let code = `'use strict';\n\n`;
+  code += `const { Contract } = require('fabric-contract-api');\n\n`;
+  code += `class BPMNContract extends Contract {\n\n`;
+
+  // Funções para criar os participantes
+  participantArray.forEach(part => {
+    const partName = part.name ? part.name.replace(/\s+/g, '') : 'UnnamedParticipant';
+    code += `  async create${partName}(ctx) {\n`;
+    code += `    const participant = {\n`;
+    code += `      id: '${part.id}',\n`;
+    code += `      name: '${part.name}'\n`;
+    code += `    };\n`;
+    code += `    await ctx.stub.putState('${part.id}', Buffer.from(JSON.stringify(participant)));\n`;
+    code += `    return JSON.stringify(participant);\n`;
+    code += `  }\n\n`;
+  });
+
+  // Funções para criar os assets
+  assetArray.forEach(asset => {
+    const assetName = asset.name ? asset.name.replace(/\s+/g, '') : 'UnnamedAsset';
+    code += `  async create${assetName}(ctx) {\n`;
+    code += `    const asset = {\n`;
+    code += `      id: '${asset.id}',\n`;
+    code += `      name: '${asset.name}'\n`;
+    code += `    };\n`;
+    code += `    await ctx.stub.putState('${asset.id}', Buffer.from(JSON.stringify(asset)));\n`;
+    code += `    return JSON.stringify(asset);\n`;
+    code += `  }\n\n`;
+  });
+
+  // Funções para executar tasks
+  taskArray.forEach(task => {
+    const taskName = task.name ? task.name.replace(/\s+/g, '') : 'UnnamedTask';
+    const participant = task.participant || 'UnknownOrg';
+    const datastore = task.datastores || 'N/A';
+    const typedatastore = task.typedatastore || '';
+
+    code += `  async ${taskName}(ctx) {\n`;
+    code += `    // Task: ${task.name} executada por ${participant}\n`;
+    if (datastore !== 'N/A') {
+      code += `    // Ação sobre o datastore (${typedatastore}): ${datastore}\n`;
+    }
+    code += `    console.log("${participant} executa ${task.name}");\n`;
+    code += `    return true;\n`;
+    code += `  }\n\n`;
+  });
+
+  code += `}\n\nmodule.exports = BPMNContract;\n`;
+
+  return code;
+}
+
+
 
 
 
