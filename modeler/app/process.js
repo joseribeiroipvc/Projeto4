@@ -1,4 +1,3 @@
-
 function Participant(id, name) {
 this.id = id;
 this.name = name;
@@ -390,6 +389,18 @@ function generateChaincode(taskArray, participantArray, assetArray) {
   });
 
   code += `}\n\nmodule.exports = BPMNContract;\n`;
+
+  // Salvar diretamente em vez de fazer download
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const contractPath = path.join(__dirname, '../../SmartContractHyperledger/contract.js');
+    fs.writeFileSync(contractPath, code);
+    alert('Smart Contract salvo com sucesso em SmartContractHyperledger/contract.js');
+  } catch (error) {
+    console.error('Erro ao salvar o contrato:', error);
+    alert('Erro ao salvar o Smart Contract. Verifique o console para mais detalhes.');
+  }
 
   return code;
 }

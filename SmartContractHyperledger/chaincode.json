@@ -1,0 +1,13 @@
+{
+    "name": "bpmn-contract",
+    "version": "1.0",
+    "description": "BPMN Smart Contract for Hyperledger Fabric",
+    "main": "index.js",
+    "engines": {
+        "node": ">=12",
+        "npm": ">=5"
+    },
+    "scripts": {
+        "start": "fabric-chaincode-node start"
+    }
+} 
