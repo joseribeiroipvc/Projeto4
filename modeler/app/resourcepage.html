@@ -465,28 +465,30 @@ function downloadContract() {
 }
 
 
-function generateChaincode(taskArray, participantArray, assetArray) {
+function generateChaincode(taskArray, participantArray, assetArray, contractName = "BPMNContract") {
   let code = `'use strict';\n\n`;
-  code += `const { Contract } = require('fabric-contract-api');\n\n`;
-  code += `class BPMNContract extends Contract {\n\n`;
+  code += `const { Contract } = require('fabric-contract-api');\n`;
+  code += `const { v4: uuidv4 } = require('uuid');\n\n`;
+  code += `class ${contractName} extends Contract {\n\n`;
 
-  // Criar participantes
-  participantArray.forEach(part => {
-    const partName = part.name ? part.name.replace(/\s+/g, '') : 'UnnamedParticipant';
-    code += `  async create${partName}(ctx) {\n`;
+  // Participantes
+  participantArray.forEach(participant => {
+    const funcName = `create${participant.name.replace(/\s+/g, '')}`;
+    code += `  async ${funcName}(ctx) {\n`;
     code += `    const participant = {\n`;
-    code += `      id: '${part.id}',\n`;
-    code += `      name: '${part.name}'\n`;
+    code += `      id: '${participant.id}',\n`;
+    code += `      name: '${participant.name}'\n`;
     code += `    };\n`;
-    code += `    await ctx.stub.putState('${part.id}', Buffer.from(JSON.stringify(participant)));\n`;
+    code += `    await ctx.stub.putState('${participant.id}', Buffer.from(JSON.stringify(participant)));\n`;
     code += `    return JSON.stringify(participant);\n`;
     code += `  }\n\n`;
   });
 
-  // Criar assets
+  // Ativos
   assetArray.forEach(asset => {
-    const assetName = asset.name && asset.name !== 'null' ? asset.name.replace(/\s+/g, '') : 'UnnamedAsset';
-    code += `  async create${assetName}(ctx) {\n`;
+    const assetName = asset.name || 'UnnamedAsset';
+    const funcName = `create${assetName.replace(/\s+/g, '')}`;
+    code += `  async ${funcName}(ctx) {\n`;
     code += `    const asset = {\n`;
     code += `      id: '${asset.id}',\n`;
     code += `      name: '${asset.name}'\n`;
@@ -496,27 +498,58 @@ function generateChaincode(taskArray, participantArray, assetArray) {
     code += `  }\n\n`;
   });
 
-  // Criar métodos das tasks
+  // Tarefas (com lógica para criar e listar Encomendas/Faturas)
   taskArray.forEach(task => {
     const taskName = task.name ? task.name.replace(/\s+/g, '') : 'UnnamedTask';
-    const participant = task.participant || 'UnknownOrg';
-    const datastore = task.datastores || 'N/A';
-    const typedatastore = task.typedatastore || '';
+    const label = task.name || 'Tarefa BPMN';
 
-    code += `  async ${taskName}(ctx) {\n`;
-    code += `    // Task: ${task.name} executada por ${participant}\n`;
-    if (datastore !== 'N/A') {
-      code += `    // Ação sobre o datastore (${typedatastore}): ${datastore}\n`;
+    if (taskName.toLowerCase().includes('criar') && (taskName.toLowerCase().includes('encomenda') || taskName.toLowerCase().includes('fatura'))) {
+      const tipo = taskName.toLowerCase().includes('encomenda') ? 'Encomenda' : 'Fatura';
+
+      code += `  async ${taskName}(ctx) {\n`;
+      code += `    const id = uuidv4();\n`;
+      code += `    const timestamp = new Date().toISOString();\n`;
+      code += `    const obj = {\n`;
+      code += `      id,\n`;
+      code += `      tipo: '${tipo}',\n`;
+      code += `      dataCriacao: timestamp,\n`;
+      code += `      estado: 'Criada'\n`;
+      code += `    };\n`;
+      code += `    await ctx.stub.putState(id, Buffer.from(JSON.stringify(obj)));\n`;
+      code += `    return JSON.stringify(obj);\n`;
+      code += `  }\n\n`;
+
+    } else if (taskName.toLowerCase().includes('listar') && (taskName.toLowerCase().includes('encomenda') || taskName.toLowerCase().includes('fatura'))) {
+      const tipo = taskName.toLowerCase().includes('encomenda') ? 'Encomenda' : 'Fatura';
+
+      code += `  async ${taskName}(ctx) {\n`;
+      code += `    const allResults = [];\n`;
+      code += `    const iterator = await ctx.stub.getStateByRange('', '');\n\n`;
+      code += `    for await (const res of iterator) {\n`;
+      code += `      const record = JSON.parse(res.value.toString());\n`;
+      code += `      if (record.tipo === '${tipo}') {\n`;
+      code += `        allResults.push(record);\n`;
+      code += `      }\n`;
+      code += `    }\n\n`;
+      code += `    return JSON.stringify(allResults);\n`;
+      code += `  }\n\n`;
+
+    } else {
+      // Tarefa genérica
+      code += `  async ${taskName}(ctx) {\n`;
+      code += `    // ${label}\n`;
+      code += `    console.log('${label} executada.');\n`;
+      code += `    return true;\n`;
+      code += `  }\n\n`;
     }
-    code += `    console.log("${participant} executa ${task.name}");\n`;
-    code += `    return true;\n`;
-    code += `  }\n\n`;
   });
 
-  code += `}\n\nmodule.exports = BPMNContract;\n`;
+  code += `}\n\nmodule.exports = ${contractName};\n`;
 
   return code;
 }
+
+
 
 
 
