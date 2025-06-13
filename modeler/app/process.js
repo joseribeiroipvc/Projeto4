@@ -339,7 +339,6 @@ console.log(taskArray);
     
 } );
 
-
 function generateChaincode(taskArray, participantArray, assetArray, contractName = "BPMNContract") {
   let code = `'use strict';\n\n`;
   code += `const { Contract } = require('fabric-contract-api');\n`;
@@ -373,20 +372,18 @@ function generateChaincode(taskArray, participantArray, assetArray, contractName
     code += `  }\n\n`;
   });
 
-  // Tarefas (com lógica para criar e listar Encomendas/Faturas)
+  // Tarefas
   taskArray.forEach(task => {
     const taskName = task.name ? task.name.replace(/\s+/g, '') : 'UnnamedTask';
     const label = task.name || 'Tarefa BPMN';
 
-    if (taskName.toLowerCase().includes('criar') && (taskName.toLowerCase().includes('encomenda') || taskName.toLowerCase().includes('fatura'))) {
-      const tipo = taskName.toLowerCase().includes('encomenda') ? 'Encomenda' : 'Fatura';
-
+    if (taskName.toLowerCase().includes('criar') && taskName.toLowerCase().includes('encomenda')) {
       code += `  async ${taskName}(ctx) {\n`;
       code += `    const id = uuidv4();\n`;
       code += `    const timestamp = new Date().toISOString();\n`;
       code += `    const obj = {\n`;
       code += `      id,\n`;
-      code += `      tipo: '${tipo}',\n`;
+      code += `      tipo: 'Encomenda',\n`;
       code += `      dataCriacao: timestamp,\n`;
       code += `      estado: 'Criada'\n`;
       code += `    };\n`;
@@ -394,23 +391,52 @@ function generateChaincode(taskArray, participantArray, assetArray, contractName
       code += `    return JSON.stringify(obj);\n`;
       code += `  }\n\n`;
 
-    } else if (taskName.toLowerCase().includes('listar') && (taskName.toLowerCase().includes('encomenda') || taskName.toLowerCase().includes('fatura'))) {
-      const tipo = taskName.toLowerCase().includes('encomenda') ? 'Encomenda' : 'Fatura';
+    } else if (taskName.toLowerCase().includes('criar') && taskName.toLowerCase().includes('fatura')) {
+      code += `  async ${taskName}(ctx, encomendaId) {\n`;
+      code += `    const encomenda = await ctx.stub.getState(encomendaId);\n`;
+      code += `    if (!encomenda || encomenda.length === 0) {\n`;
+      code += `      throw new Error("Encomenda associada não existe.");\n`;
+      code += `    }\n\n`;
+      code += `    const id = uuidv4();\n`;
+      code += `    const timestamp = new Date().toISOString();\n`;
+      code += `    const obj = {\n`;
+      code += `      id,\n`;
+      code += `      tipo: 'Fatura',\n`;
+      code += `      encomendaId,\n`;
+      code += `      dataCriacao: timestamp,\n`;
+      code += `      estado: 'Criada'\n`;
+      code += `    };\n`;
+      code += `    await ctx.stub.putState(id, Buffer.from(JSON.stringify(obj)));\n`;
+      code += `    return JSON.stringify(obj);\n`;
+      code += `  }\n\n`;
 
+    } else if (taskName.toLowerCase().includes('listar') && taskName.toLowerCase().includes('encomenda')) {
       code += `  async ${taskName}(ctx) {\n`;
       code += `    const allResults = [];\n`;
-      code += `    const iterator = await ctx.stub.getStateByRange('', '');\n\n`;
+      code += `    const iterator = await ctx.stub.getStateByRange('', '');\n`;
       code += `    for await (const res of iterator) {\n`;
       code += `      const record = JSON.parse(res.value.toString());\n`;
-      code += `      if (record.tipo === '${tipo}') {\n`;
+      code += `      if (record.tipo === 'Encomenda') {\n`;
       code += `        allResults.push(record);\n`;
       code += `      }\n`;
-      code += `    }\n\n`;
+      code += `    }\n`;
+      code += `    return JSON.stringify(allResults);\n`;
+      code += `  }\n\n`;
+
+    } else if (taskName.toLowerCase().includes('listar') && taskName.toLowerCase().includes('fatura')) {
+      code += `  async ${taskName}(ctx) {\n`;
+      code += `    const allResults = [];\n`;
+      code += `    const iterator = await ctx.stub.getStateByRange('', '');\n`;
+      code += `    for await (const res of iterator) {\n`;
+      code += `      const record = JSON.parse(res.value.toString());\n`;
+      code += `      if (record.tipo === 'Fatura') {\n`;
+      code += `        allResults.push(record);\n`;
+      code += `      }\n`;
+      code += `    }\n`;
       code += `    return JSON.stringify(allResults);\n`;
       code += `  }\n\n`;
 
     } else {
-      // Tarefa genérica
       code += `  async ${taskName}(ctx) {\n`;
       code += `    // ${label}\n`;
       code += `    console.log('${label} executada.');\n`;
@@ -420,8 +446,6 @@ function generateChaincode(taskArray, participantArray, assetArray, contractName
   });
 
   code += `}\n\nmodule.exports = ${contractName};\n`;
-
-  
 
 
 
