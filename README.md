@@ -1,4 +1,3 @@
-
 ![Image](https://github.com/user-attachments/assets/a2921c8a-6523-4115-bb27-5e630b091b99)
 
 # Projeto BPMN to Hyperledger Fabric Smart Contract Generator
@@ -11,25 +10,8 @@ Este projeto permite gerar automaticamente smart contracts para Hyperledger Fabr
 - **Geração Automática de Smart Contracts**: Converte diagramas BPMN em código JavaScript para Hyperledger Fabric
 - **Deploy Automático**: Script para criar e configurar automaticamente a rede Hyperledger Fabric
 - **Visualização da Rede**: Interface web através do Hyperledger Explorer
-- **Análise de Elementos BPMN**: Extração automática de participantes, datastores e tasks
+- **Análise de Elementos BPMN**: Extração automática de participantes, datastores e tarefas
 
-## 📋 Pré-requisitos
-
-### Software necessário:
-- **Node.js** (v14 ou superior)
-- **npm** (v6 ou superior)
-- **Docker** (v20 ou superior)
-- **Docker Compose** (v1.29 ou superior)
-- **WSL** (Windows Subsystem for Linux) - se usar Windows
-- **Git**
-
-### Verificar instalação:
-```bash
-node --version
-npm --version
-docker --version
-docker-compose --version
-```
 
 ## 🛠️ Instalação
 
@@ -44,7 +26,7 @@ cd Projeto4
 npm install
 ```
 
-### 3. Instalar dependências do modeler:
+### 3. Instalar dependências do modelador:
 ```bash
 cd modeler
 npm install
@@ -67,11 +49,11 @@ chmod +x deploy-automatico-wsl.sh
 
 ### 1. Configurar variáveis de ambiente (se necessário):
 ```bash
-# Criar arquivo .env na raiz do projeto
+# Criar ficheiro .env na raiz do projeto
 touch .env
 ```
 
-### 2. Verificar se o Docker está rodando:
+### 2. Verificar se o Docker está a correr:
 ```bash
 docker ps
 ```
@@ -83,45 +65,49 @@ docker ps
 # Na raiz do projeto
 node server.js
 ```
-**Output esperado**: `Servidor rodando na porta 3000`
 
-### Passo 2: Iniciar o modeler BPMN
+### Passo 2: Iniciar o modelador BPMN
 ```bash
-# Em um novo terminal, ir para o diretório modeler
+# Num novo terminal, ir para o diretório modeler
 cd modeler
 npm run dev
-
-<img width="827" height="418" alt="Image" src="https://github.com/user-attachments/assets/f11d4da3-7704-4d03-af8f-1e3112fd3c04" />
 ```
-**Output esperado**: `webpack-dev-server` rodando na porta 8080
+![Interface do Modeler BPMN](1.png)
 
-### Passo 3: Acessar a interface web
-Abra o navegador e acesse: `http://localhost:8080`
 
-**Na página inicial você pode:**
-- Arrastar um arquivo `.bpmn` para o área de drop
+### Passo 3: Aceder à interface web
+Abra o navegador e aceda a: `http://localhost:8081`
+
+**Na página inicial pode:**
+- Arrastar um ficheiro `.bpmn` para a área de drop
 - Criar um novo diagrama clicando em "create a new diagram"
 - Visualizar e editar o diagrama BPMN
 
+![Interface do Modeler BPMN](2.png)
+
 ### Passo 4: Processar o BPMN
 1. Após carregar/criar o diagrama BPMN
-2. Clique no botão **"Smart Contract"** no canto superior direito
+2. Clique no botão **Smart Contract** no canto superior direito
 3. Será redirecionado para `resourcepage.html`
 
 ### Passo 5: Visualizar elementos BPMN
-Na página `resourcepage.html` você verá:
+Na página `resourcepage.html` verá:
 - **Participantes**: Tabela com participantes do processo
 - **Assets**: Tabela com datastores/assets
-- **Tasks**: Tabela com todas as tasks e suas associações
+- **Tarefas**: Tabela com todas as tarefas e as suas associações
+
+![Interface do Modeler BPMN](3.png)
 
 ### Passo 6: Gerar Smart Contract
-1. Clique no botão **"Process Smart-Contract"**
-2. Será solicitado o nome do arquivo (ex: `MeuContrato`)
-3. O arquivo será gerado automaticamente no diretório `SmartContractHyperledger/`
+1. Clique no botão **Process Smart-Contract**
+2. Será solicitado o nome do ficheiro (ex: `MeuContrato`)
+3. O ficheiro será gerado automaticamente no diretório `SmartContractHyperledger/`
+
+![Interface do Modeler BPMN](4.png)
 
 ### Passo 7: Configurar o Smart Contract
-1. Edite o arquivo `SmartContractHyperledger/index.js`
-2. Certifique-se de que o nome do contract está correto:
+1. Edite o ficheiro `SmartContractHyperledger/index.js`
+2. Certifique-se de que o nome do contrato está correto:
 ```javascript
 const contract = require('./MeuContrato.js');
 module.exports.contracts = [contract];
@@ -132,6 +118,8 @@ module.exports.contracts = [contract];
 # Na raiz do projeto
 ./deploy-automatico-wsl.sh
 ```
+![Interface do Modeler BPMN](5.png)
+
 
 **Este script irá:**
 - Criar a rede de teste com 2 organizações
@@ -147,14 +135,17 @@ cd fabric-samples/explorer
 docker-compose up -d
 ```
 
-### Passo 10: Acessar o Hyperledger Explorer
-Abra o navegador e acesse: `http://localhost:8080`
+### Passo 10: Aceder ao Hyperledger Explorer
+Abra o navegador e aceda a: `http://localhost:8080`
 
-**No Explorer você pode:**
+**No Explorer pode:**
 - Visualizar blocos da blockchain
 - Ver transações
-- Monitorar chaincode
+- Monitorizar chaincode
 - Visualizar organizações e peers
+
+![Interface do Modeler BPMN](6.png)
+
 
 ## 📁 Estrutura do Projeto
 
@@ -163,69 +154,24 @@ Projeto4/
 ├── README.md
 ├── server.js                          # Servidor backend
 ├── package.json                       # Dependências principais
-├── deploy-automatico-wsl.sh          # Script de deploy automático
+├── deploy-automatico-wsl.sh           # Script de deploy automático
 ├── modeler/                           # Modelador BPMN
 │   ├── app/
-│   │   ├── index.html                # Página principal do modeler
-│   │   ├── resourcepage.html         # Página de visualização
-│   │   ├── app.js                    # Lógica do modeler
-│   │   └── process.js                # Processamento BPMN
+│   │   ├── index.html                 # Página principal do modelador
+│   │   ├── resourcepage.html          # Página de visualização
+│   │   ├── app.js                     # Lógica do modelador
+│   │   └── process.js                 # Processamento BPMN
 │   └── package.json
-├── SmartContractHyperledger/          # Smart Contracts
-│   ├── index.js                      # Configuração do chaincode
-│   ├── contract.js                   # Smart contract gerado
-│   └── models/                       # Modelos de dados
-└── fabric-samples/                   # Rede Hyperledger Fabric
-    ├── test-network/                 # Configuração da rede
-    └── explorer/                     # Hyperledger Explorer
+├── SmartContractHyperledger/           # Smart Contracts
+│   ├── index.js                       # Configuração do chaincode
+│   ├── contract.js                    # Smart contract gerado
+│  
+└── fabric-samples/                    # Rede Hyperledger Fabric
+    ├── test-network/                  # Configuração da rede
+    └── explorer/                      # Hyperledger Explorer
 ```
 
-## 🔧 Troubleshooting
 
-### Problema: Erro de porta já em uso
-```bash
-# Verificar processos na porta
-lsof -i :3000
-lsof -i :8080
-
-# Matar processo se necessário
-kill -9 <PID>
-```
-
-### Problema: Docker não está rodando
-```bash
-# Iniciar Docker
-sudo systemctl start docker
-
-# Verificar status
-sudo systemctl status docker
-```
-
-### Problema: Permissões no WSL
-```bash
-# Dar permissões ao script
-chmod +x deploy-automatico-wsl.sh
-
-# Se necessário, executar como sudo
-sudo ./deploy-automatico-wsl.sh
-```
-
-### Problema: Erro de node_modules
-```bash
-# Limpar e reinstalar dependências
-rm -rf node_modules package-lock.json
-npm install
-```
-
-### Problema: Erro no Hyperledger Explorer
-```bash
-# Verificar logs
-docker logs hyperledger-explorer
-
-# Recriar container
-docker-compose down
-docker-compose up -d
-```
 
 ## 📊 Teste do Sistema
 
@@ -250,30 +196,16 @@ peer chaincode invoke -o orderer.example.com:7050 --tls --cafile /opt/gopath/src
 peer chaincode query -C mychannel -n bpmn-contract -c '{"function":"getAllParticipants","Args":[]}'
 ```
 
-## 🤝 Contribuição
-
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
-
-## 📝 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
 
 ## 📞 Suporte
 
 Para suporte e dúvidas:
-- Email: [seu-email@example.com]
+- Email: [samuelgomes@ipvc.pt]; [jose.ribeiro@ipvc.pt]
 - Issues: [GitHub Issues](https://github.com/joseribeiroipvc/Projeto4/issues)
 
 ## 🎯 Roadmap
-
 - [ ] Suporte para elementos BPMN mais complexos
 - [ ] Interface web para configuração de rede
 - [ ] Geração automática de testes
 - [ ] Suporte para múltiplas linguagens de smart contract
 - [ ] Integração com CI/CD
-
-
