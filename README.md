@@ -1,145 +1,279 @@
 
-![image](https://user-images.githubusercontent.com/61696448/125817362-f7c10c06-07fb-46b5-abc5-8d798ef76a9d.png)
+![Image](https://github.com/user-attachments/assets/a2921c8a-6523-4115-bb27-5e630b091b99)
 
+# Projeto BPMN to Hyperledger Fabric Smart Contract Generator
 
-# HyperledgerSmartContractGenerator
- 
-This project was developed associated with the curricular unit of Project IV of the 3rd year of the Graduation Degree in Informatics’ Engineering (Computer Science) at the School of Technology and Management of the Polytechnic institute of Viana do Castelo
+Este projeto permite gerar automaticamente smart contracts para Hyperledger Fabric a partir de diagramas BPMN. O sistema inclui um modelador BPMN visual, geração automática de código, deploy automático na rede Hyperledger Fabric e visualização através do Hyperledger Explorer.
 
-The main objective of this project is the development a platform that allows users to insert their bpmn files and convert them into a smart contract ready to be deployed to the blockchain.
+## 🚀 Funcionalidades
 
-The conversion part is finished however the tasks smartcontract file is not completed
+- **Modelador BPMN Visual**: Interface web para criar e editar diagramas BPMN
+- **Geração Automática de Smart Contracts**: Converte diagramas BPMN em código JavaScript para Hyperledger Fabric
+- **Deploy Automático**: Script para criar e configurar automaticamente a rede Hyperledger Fabric
+- **Visualização da Rede**: Interface web através do Hyperledger Explorer
+- **Análise de Elementos BPMN**: Extração automática de participantes, datastores e tasks
 
+## 📋 Pré-requisitos
 
-# Conversion methodology
+### Software necessário:
+- **Node.js** (v14 ou superior)
+- **npm** (v6 ou superior)
+- **Docker** (v20 ou superior)
+- **Docker Compose** (v1.29 ou superior)
+- **WSL** (Windows Subsystem for Linux) - se usar Windows
+- **Git**
 
-Besides getting the id and name from the datastores,participant,tasks themselfs we also need to get the source and target from the connections so we can see where the lines are connecting the diffrent parts of the smart contract and who is reading or writing
+### Verificar instalação:
+```bash
+node --version
+npm --version
+docker --version
+docker-compose --version
+```
 
-      Data queried    
-                    - datastore - id - name
-                    - Assosiation - idsource - idtarget (between datastore and task)
-                    - task - id - name
-                    - Sequenceflow - idsource - idtarget (between tasks)
-                    - messageflow - idsource - idtarget (between participant e task)
-                    - participant - id - name   
+## 🛠️ Instalação
 
+### 1. Clonar o repositório:
+```bash
+git clone https://github.com/joseribeiroipvc/Projeto4.git
+cd Projeto4
+```
 
-# How to install the generator
-- Go into the repository
- 
-      $ cd ProjetoIV-HyperledgerSmartContractGenerator
-      $ cd modeler
-	
-- Install dependencies
+### 2. Instalar dependências do projeto principal:
+```bash
+npm install
+```
 
-      $ npm install && cd smartcontract && npm install && cd ..
+### 3. Instalar dependências do modeler:
+```bash
+cd modeler
+npm install
+cd ..
+```
 
-- Run the app 
+### 4. Instalar dependências do Smart Contract:
+```bash
+cd SmartContractHyperledger
+npm install
+cd ..
+```
 
-      $ npm start
+### 5. Dar permissões ao script de deploy:
+```bash
+chmod +x deploy-automatico-wsl.sh
+```
 
+## ⚙️ Configuração
 
+### 1. Configurar variáveis de ambiente (se necessário):
+```bash
+# Criar arquivo .env na raiz do projeto
+touch .env
+```
 
-# Using the generator
+### 2. Verificar se o Docker está rodando:
+```bash
+docker ps
+```
 
-- Drop a .bpmn file in the loader
-- Click process bpmn
-- Press the ok button incase your bpmn has missing information
-- Make desired alterations
-- Press the Download button
+## 🚀 Execução do Projeto
 
-![image](https://user-images.githubusercontent.com/61696448/125817845-144cb25b-ed1b-4d5d-be1c-5e76e1d040d9.png)
-![image](https://user-images.githubusercontent.com/61696448/125817907-2e260127-fd1c-43cf-a21f-857a2d92b98f.png)
+### Passo 1: Iniciar o servidor backend
+```bash
+# Na raiz do projeto
+node server.js
+```
+**Output esperado**: `Servidor rodando na porta 3000`
 
+### Passo 2: Iniciar o modeler BPMN
+```bash
+# Em um novo terminal, ir para o diretório modeler
+cd modeler
+npm run dev
 
+<img width="827" height="418" alt="Image" src="https://github.com/user-attachments/assets/f11d4da3-7704-4d03-af8f-1e3112fd3c04" />
+```
+**Output esperado**: `webpack-dev-server` rodando na porta 8080
 
-# Smart contract install and deployment
+### Passo 3: Acessar a interface web
+Abra o navegador e acesse: `http://localhost:8080`
 
-To deploy the smart contracts you must install all hyperledger fabric required components such as docker, windows build tools , samples, binaries , etc.
-These can be found here https://hyperledger-fabric.readthedocs.io/en/release-1.4/install.html
+**Na página inicial você pode:**
+- Arrastar um arquivo `.bpmn` para o área de drop
+- Criar um novo diagrama clicando em "create a new diagram"
+- Visualizar e editar o diagrama BPMN
 
-   Note that the following code used the chaincode present in fabric-samples/asset-transfer-basic/chaincode-javascript/AssetTrasnfer if you wish to something diffrent it will require changes.
-   
-   The following code allows for the deployment to a blockchain of the assets and utilized the getallassets function to show them on the screen: 
-   
-    cd fabric-samples/test-network
-    ./network.sh down
-    ./network.sh up -c createChannel
-    cd fabric-samples/asset-transfer-basic/chaincode-javascript //skip this one if you did it previously
-    cd ../../test-network  //skip this one if you did it previously
+### Passo 4: Processar o BPMN
+1. Após carregar/criar o diagrama BPMN
+2. Clique no botão **"Smart Contract"** no canto superior direito
+3. Será redirecionado para `resourcepage.html`
 
-    //Passos para por o peer a dar
-    export PATH=${PWD}/../bin:$PATH
-    export FABRIC_CFG_PATH=$PWD/../config/ 
-    peer version
+### Passo 5: Visualizar elementos BPMN
+Na página `resourcepage.html` você verá:
+- **Participantes**: Tabela com participantes do processo
+- **Assets**: Tabela com datastores/assets
+- **Tasks**: Tabela com todas as tasks e suas associações
 
+### Passo 6: Gerar Smart Contract
+1. Clique no botão **"Process Smart-Contract"**
+2. Será solicitado o nome do arquivo (ex: `MeuContrato`)
+3. O arquivo será gerado automaticamente no diretório `SmartContractHyperledger/`
 
-    //chaincode
-    peer lifecycle chaincode package basic.tar.gz --path ../asset-transfer-basic/chaincode-javascript/ --lang node --label basic_1.0
+### Passo 7: Configurar o Smart Contract
+1. Edite o arquivo `SmartContractHyperledger/index.js`
+2. Certifique-se de que o nome do contract está correto:
+```javascript
+const contract = require('./MeuContrato.js');
+module.exports.contracts = [contract];
+```
 
+### Passo 8: Deploy da rede Hyperledger Fabric
+```bash
+# Na raiz do projeto
+./deploy-automatico-wsl.sh
+```
 
-    export CORE_PEER_TLS_ENABLED=true
-    export CORE_PEER_LOCALMSPID="Org1MSP"
-    export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
-    export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
-    export CORE_PEER_ADDRESS=localhost:7051
+**Este script irá:**
+- Criar a rede de teste com 2 organizações
+- Empacotar o chaincode
+- Instalar o chaincode nos peers
+- Fazer deploy na rede
+- Configurar o canal `mychannel`
 
-    peer lifecycle chaincode install basic.tar.gz
+### Passo 9: Configurar Hyperledger Explorer
+```bash
+# Criar container do Explorer
+cd fabric-samples/explorer
+docker-compose up -d
+```
 
-    export CORE_PEER_LOCALMSPID="Org2MSP"
-    export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
-    export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp
-    export CORE_PEER_ADDRESS=localhost:9051
+### Passo 10: Acessar o Hyperledger Explorer
+Abra o navegador e acesse: `http://localhost:8080`
 
-    peer lifecycle chaincode install basic.tar.gz
+**No Explorer você pode:**
+- Visualizar blocos da blockchain
+- Ver transações
+- Monitorar chaincode
+- Visualizar organizações e peers
 
-    peer lifecycle chaincode queryinstalled
+## 📁 Estrutura do Projeto
 
-    export CC_PACKAGE_ID=basic_1.0:84abaabe6133f2cd172c457c751a7a2f4da631d4224f36c605760e677ba938fa
+```
+Projeto4/
+├── README.md
+├── server.js                          # Servidor backend
+├── package.json                       # Dependências principais
+├── deploy-automatico-wsl.sh          # Script de deploy automático
+├── modeler/                           # Modelador BPMN
+│   ├── app/
+│   │   ├── index.html                # Página principal do modeler
+│   │   ├── resourcepage.html         # Página de visualização
+│   │   ├── app.js                    # Lógica do modeler
+│   │   └── process.js                # Processamento BPMN
+│   └── package.json
+├── SmartContractHyperledger/          # Smart Contracts
+│   ├── index.js                      # Configuração do chaincode
+│   ├── contract.js                   # Smart contract gerado
+│   └── models/                       # Modelos de dados
+└── fabric-samples/                   # Rede Hyperledger Fabric
+    ├── test-network/                 # Configuração da rede
+    └── explorer/                     # Hyperledger Explorer
+```
 
-    ./network.sh up createChannel
+## 🔧 Troubleshooting
 
-    peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --channelID mychannel --name basic --version 1.0 --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
+### Problema: Erro de porta já em uso
+```bash
+# Verificar processos na porta
+lsof -i :3000
+lsof -i :8080
 
+# Matar processo se necessário
+kill -9 <PID>
+```
 
-    export CORE_PEER_LOCALMSPID="Org1MSP"
-    export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
-    export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
-    export CORE_PEER_ADDRESS=localhost:7051
+### Problema: Docker não está rodando
+```bash
+# Iniciar Docker
+sudo systemctl start docker
 
-    peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --channelID mychannel --name basic --version 1.0 --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
+# Verificar status
+sudo systemctl status docker
+```
 
-    peer lifecycle chaincode checkcommitreadiness --channelID mychannel --name basic --version 1.0 --sequence 1 --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" --output json
+### Problema: Permissões no WSL
+```bash
+# Dar permissões ao script
+chmod +x deploy-automatico-wsl.sh
 
-    peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --channelID mychannel --name basic --version 1.0 --sequence 1 --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" --peerAddresses localhost:7051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt" --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt"
+# Se necessário, executar como sudo
+sudo ./deploy-automatico-wsl.sh
+```
 
-    peer lifecycle chaincode querycommitted --channelID mychannel --name basic --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
+### Problema: Erro de node_modules
+```bash
+# Limpar e reinstalar dependências
+rm -rf node_modules package-lock.json
+npm install
+```
 
-    peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" -C mychannel -n basic --peerAddresses localhost:7051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt" --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt" -c '{"function":"InitLedger","Args":[]}'
+### Problema: Erro no Hyperledger Explorer
+```bash
+# Verificar logs
+docker logs hyperledger-explorer
 
-    peer chaincode query -C mychannel -n basic -c '{"Args":["GetAllAssets"]}'
-    
+# Recriar container
+docker-compose down
+docker-compose up -d
+```
 
+## 📊 Teste do Sistema
 
-This should be your result: 
+### 1. Teste básico do Smart Contract:
+```bash
+# Entrar no container CLI
+docker exec -it cli bash
 
-![image](https://user-images.githubusercontent.com/61696448/125814898-5ad58b8d-23f7-4fc4-b673-33b100ef08e1.png)
+# Configurar variáveis de ambiente
+export CORE_PEER_TLS_ENABLED=true
+export CORE_PEER_LOCALMSPID=Org1MSP
+export CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+export CORE_PEER_ADDRESS=peer0.org1.example.com:7051
 
+# Testar funções
+peer chaincode invoke -o orderer.example.com:7050 --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n bpmn-contract --peerAddresses peer0.org1.example.com:7051 --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt --peerAddresses peer0.org2.example.com:9051 --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt -c '{"function":"InitLedger","Args":[]}'
+```
 
+### 2. Consultar dados:
+```bash
+peer chaincode query -C mychannel -n bpmn-contract -c '{"function":"getAllParticipants","Args":[]}'
+```
 
+## 🤝 Contribuição
 
-# TODO
+1. Fork o projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
 
-As of now the smart contracts are imported inline rather than gotten from the file as shows here: 
+## 📝 Licença
 
-![image](https://user-images.githubusercontent.com/61696448/125815188-24fcbe3b-8e4c-47eb-bcd5-21c35e5a5fb2.png)
+Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
 
-The reason for so is that when deploying to the chaincode using the commented code the following error is displayed:
+## 📞 Suporte
 
-![image](https://user-images.githubusercontent.com/61696448/125815273-7410e9a1-456e-406e-bdc2-bddd20510691.png)
+Para suporte e dúvidas:
+- Email: [seu-email@example.com]
+- Issues: [GitHub Issues](https://github.com/joseribeiroipvc/Projeto4/issues)
 
-The solution might be to use json 
+## 🎯 Roadmap
 
-Furthermore - Finalize the tasks.js, etc
+- [ ] Suporte para elementos BPMN mais complexos
+- [ ] Interface web para configuração de rede
+- [ ] Geração automática de testes
+- [ ] Suporte para múltiplas linguagens de smart contract
+- [ ] Integração com CI/CD
 
 
