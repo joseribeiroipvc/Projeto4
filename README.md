@@ -1,5 +1,5 @@
 
-![image](https://user-images.githubusercontent.com/61696448/125817362-f7c10c06-07fb-46b5-abc5-8d798ef76a9d.png)
+![Image](https://github.com/user-attachments/assets/17480ef8-41b4-4300-ae1b-df1ac05b0a80)
 
 
 # HyperledgerSmartContractGenerator
