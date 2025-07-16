@@ -1,6 +1,6 @@
 'use strict';
 
-const BPMNContract = require('./contract.js');
+const BPMNContract = require('./BPMNContractAtual.js');
 
 module.exports.BPMNContract = BPMNContract;
 module.exports.contracts = [BPMNContract]; 

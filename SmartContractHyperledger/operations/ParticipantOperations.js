@@ -71,10 +71,10 @@ class ParticipantOperations {
     async getAllParticipants(ctx) {
         try {
             console.log('DEBUG: Iniciando getAllParticipants');
-            const allResults = [];
+        const allResults = [];
             
             console.log('DEBUG: Iniciando getStateByRange');
-            const iterator = await ctx.stub.getStateByRange('', '');
+        const iterator = await ctx.stub.getStateByRange('', '');
             console.log('DEBUG: Iterator criado');
             
             try {
@@ -82,7 +82,7 @@ class ParticipantOperations {
                 while (true) {
                     console.log('DEBUG: Iteração', count++);
                     const res = await iterator.next();
-                    
+        
                     if (res.done) {
                         console.log('DEBUG: Iterator finalizado após', count, 'iterações');
                         break;
@@ -99,14 +99,14 @@ class ParticipantOperations {
                             
                             if (record.docType === 'participant') {
                                 console.log('DEBUG: Participante encontrado:', JSON.stringify(record));
-                                allResults.push(record);
+                    allResults.push(record);
                             } else {
                                 console.log('DEBUG: Registro não é participante, docType:', record.docType);
-                            }
-                        } catch (err) {
+                }
+            } catch (err) {
                             console.error('Erro ao processar registro:', err);
                             console.error('Registro raw:', res.value.toString());
-                        }
+            }
                     } else {
                         console.log('DEBUG: Valor nulo ou indefinido encontrado');
                     }
@@ -119,7 +119,7 @@ class ParticipantOperations {
             console.log('DEBUG: Total de participantes encontrados:', allResults.length);
             console.log('DEBUG: Lista de participantes:', JSON.stringify(allResults));
             
-            return JSON.stringify(allResults);
+        return JSON.stringify(allResults);
             
         } catch (error) {
             console.error('ERRO em getAllParticipants:', error);

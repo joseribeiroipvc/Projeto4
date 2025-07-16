@@ -36,6 +36,10 @@ async function openDiagram(xml) {
     container
       .removeClass('with-error')
       .addClass('with-diagram');
+    
+    // CORREÇÃO: Salvar o XML no sessionStorage sempre que um diagrama é aberto
+    sessionStorage.setItem("test", xml);
+    console.log('XML do diagrama salvo no sessionStorage');
   } catch (err) {
 
     container
@@ -168,12 +172,22 @@ $(function() {
   var downloadSmart = $('#js-process-smart-contract');
 
 
- $('#js-process-smart-contract').click(function(e) {
+ $('#js-process-smart-contract').click(async function(e) {
   e.preventDefault();
   e.stopPropagation();
 
-  // Apenas redireciona para a página onde o contrato será gerado
-  window.location.href = "resourcepage.html";
+  try {
+    // CORREÇÃO: Garantir que o XML mais recente seja salvo no sessionStorage antes de redirecionar
+    const { xml } = await modeler.saveXML({ format: true });
+    sessionStorage.setItem("test", xml);
+    console.log('XML final salvo no sessionStorage antes de redirecionar');
+    
+    // Redirecionar para a página onde o contrato será gerado
+    window.location.href = "resourcepage.html";
+  } catch (err) {
+    console.error('Erro ao salvar XML:', err);
+    alert('Erro ao processar diagrama. Por favor, tente novamente.');
+  }
 });
 
 
@@ -215,6 +229,10 @@ $(function() {
     try {
       const { xml } = await modeler.saveXML({ format: true });
       setEncoded(downloadLink, 'diagram.bpmn', xml);
+      
+      // CORREÇÃO: Salvar também no sessionStorage para que resourcepage.html receba as atualizações
+      sessionStorage.setItem("test", xml);
+      console.log('XML atualizado salvo no sessionStorage');
     } catch (err) {
 
       console.error('Error happened saving XML: ', err);

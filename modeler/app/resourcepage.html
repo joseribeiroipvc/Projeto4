@@ -15,8 +15,6 @@
       </div>
      
       <!--Nome contrato-->
-     
-
       <h2 class="titles">Participants</h2>
       <table id="tableparticipante" class="display" width="99%"></table>
       
@@ -153,7 +151,9 @@ var assosstxt = "";
           assetArray.push(novo)
     }();
   }
+   console.log("=== DATASTORES ENCONTRADOS ===");
    console.log(assetArray);
+   console.log("Texto dos datastores:", datastoretxt);
 
 
 
@@ -162,17 +162,52 @@ var assosstxt = "";
     tasktxt += "Task - " + "Id: " + xtask.item(i).getAttribute("id") + " Name: " + xtask.item(i).getAttribute("name") + "\n" ;
     var novo = new Task(xtask.item(i).getAttribute("id"),xtask.item(i).getAttribute("name"));
       
+    // Processar dataInputAssociation e dataOutputAssociation para descobrir datastores
+    var xDataInputAssoc = xmlDoc.getElementsByTagName("dataInputAssociation");
+    for(c=0; c<xDataInputAssoc.length;c++){
+      var parentElement = xDataInputAssoc.item(c).parentNode;
+      if(parentElement && parentElement.getAttribute("id") == xtask.item(i).getAttribute("id")){
+        var sourceRef = xDataInputAssoc.item(c).getElementsByTagName("sourceRef")[0];
+        if(sourceRef){
+          novo.datastores = sourceRef.textContent;
+          novo.typedatastore = "Ler";
+          console.log("DEBUG: Task", novo.name, "associada ao datastore", novo.datastores, "para LER");
+        }
+      }
+    }
+
+    var xDataOutputAssoc = xmlDoc.getElementsByTagName("dataOutputAssociation");
+    for(c=0; c<xDataOutputAssoc.length;c++){
+      var parentElement = xDataOutputAssoc.item(c).parentNode;
+      if(parentElement && parentElement.getAttribute("id") == xtask.item(i).getAttribute("id")){
+        var targetRef = xDataOutputAssoc.item(c).getElementsByTagName("targetRef")[0];
+        if(targetRef){
+          novo.datastores = targetRef.textContent;
+          novo.typedatastore = "Escrever";
+          console.log("DEBUG: Task", novo.name, "associada ao datastore", novo.datastores, "para ESCREVER");
+        }
+      }
+    }
+
+    // Removi a lógica automática - apenas associações explícitas do BPMN serão processadas
+
+    // Fallback para associations (método antigo)
     var xassos = xmlDoc.getElementsByTagName("association");
-    //para descobrir o datastore da task
     for(c=0; c<xassos.length;c++){
       //Se o sourceRef tiver o id da nossa task então a origem é a task e o destino o asset o que implica escrever
       if(xassos.item(c).getAttribute("sourceRef")==(xtask.item(i).getAttribute("id"))){
+        if(!novo.datastores) { // só se não foi definido pelos métodos acima
         novo.datastores=xassos.item(c).getAttribute("targetRef")
         novo.typedatastore="Escrever"
+          console.log("DEBUG: Task", novo.name, "associada via association ao datastore", novo.datastores, "para ESCREVER");
+        }
       }
       if(xassos.item(c).getAttribute("targetRef")==(xtask.item(i).getAttribute("id"))){
+        if(!novo.datastores) { // só se não foi definido pelos métodos acima
         novo.datastores=xassos.item(c).getAttribute("sourceRef")
         novo.typedatastore="Ler"
+          console.log("DEBUG: Task", novo.name, "associada via association ao datastore", novo.datastores, "para LER");
+        }
       }
     }
 
@@ -197,7 +232,22 @@ var assosstxt = "";
     }();
     }
 
+   console.log("=== TASKS E DATASTORES ASSOCIADOS ===");
    console.log(taskArray);
+   console.log("Texto das tasks:", tasktxt);
+   
+   // Log detalhado das associações
+   taskArray.forEach((task, index) => {
+     console.log(`Task ${index + 1}:`);
+     console.log(`  - ID: ${task.id}`);
+     console.log(`  - Nome: ${task.name}`);
+     console.log(`  - Datastore: ${task.datastores || 'Nenhum'}`);
+     console.log(`  - Tipo de acesso: ${task.typedatastore || 'Nenhum'}`);
+     console.log(`  - Participante: ${task.participant || 'Nenhum'}`);
+     console.log(`  - Tipo de participante: ${task.typeparticipant || 'Nenhum'}`);
+     console.log(`  - IsTransfer: ${task.istrasnfer}`);
+     console.log('---');
+   });
 
    var x = xmlDoc.getElementsByTagName("sequenceFlow");
    for (i = 0; i < x.length; i++) {     
@@ -220,6 +270,15 @@ var assosstxt = "";
      messagetxt += "messageFlow - " + "Id: " + x.item(i).getAttribute("id") + " Source: " + x.item(i).getAttribute("sourceRef") + "  Target: " + x.item(i).getAttribute("targetRef") + "\n" ;
     }
    console.log(messagetxt);
+
+   // Resumo final
+   console.log("\n=== RESUMO FINAL DO BPMN ===");
+   console.log(`Participantes encontrados: ${participantArray.length}`);
+   console.log(`Datastores encontrados: ${assetArray.length}`);
+   console.log(`Tasks encontradas: ${taskArray.length}`);
+   console.log("Datastores:", assetArray.map(d => d.name).join(", "));
+   console.log("Tasks:", taskArray.map(t => t.name).join(", "));
+   console.log("=====================\n");
 
 
 /*   
@@ -453,48 +512,306 @@ function downloadContract() {
   }
 
   const contractCode = generateChaincode(taskArray, participantArray, assetArray);
-  const blob = new Blob([contractCode], { type: "text/javascript" });
-  const url = URL.createObjectURL(blob);
 
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${filename}.js`;
-  link.click();
-
-  URL.revokeObjectURL(url);
+  // Enviar para o servidor
+  fetch('http://localhost:3000/save-contract', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ filename, code: contractCode })
+  })
+  .then(response => {
+    if (!response.ok) throw new Error('Erro ao guardar o contrato no servidor.');
+    return response.text();
+  })
+  .then(msg => {
+    alert(msg); // ou uma mensagem de sucesso na interface
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Erro ao guardar o contrato.");
+  });
 }
-
 
 function generateChaincode(taskArray, participantArray, assetArray, contractName = "BPMNContract") {
   let code = `'use strict';\n\n`;
-  code += `const { Contract } = require('fabric-contract-api');\n`;
-  code += `const { v4: uuidv4 } = require('uuid');\n\n`;
+  code += `const { Contract } = require('fabric-contract-api');\n\n`;
   code += `class ${contractName} extends Contract {\n\n`;
+  
+  // Constructor
+  code += `  constructor() {\n`;
+  code += `    super();\n`;
+  code += `  }\n\n`;
 
   // Participantes
   participantArray.forEach(participant => {
     const funcName = `create${participant.name.replace(/\s+/g, '')}`;
+    const participantType = participant.name.toLowerCase().includes('fornecedor') ? 'fornecedor' : 'organizacao';
+    
     code += `  async ${funcName}(ctx) {\n`;
-    code += `    const participant = {\n`;
-    code += `      id: '${participant.id}',\n`;
-    code += `      name: '${participant.name}'\n`;
-    code += `    };\n`;
-    code += `    await ctx.stub.putState('${participant.id}', Buffer.from(JSON.stringify(participant)));\n`;
-    code += `    return JSON.stringify(participant);\n`;
+    code += `    try {\n`;
+    code += `      console.log('DEBUG: Iniciando ${funcName}');\n`;
+    code += `      const timestamp = ctx.stub.getTxTimestamp();\n`;
+    code += `      const timestampStr = timestamp.seconds.toString();\n`;
+    code += `      \n`;
+    code += `      const participant = {\n`;
+    code += `        id: 'Participant_${participant.name.replace(/\s+/g, '')}_' + timestampStr,\n`;
+    code += `        name: '${participant.name}',\n`;
+    code += `        docType: 'participant',\n`;
+    code += `        tipo: '${participantType}',\n`;
+    code += `        dataCriacao: new Date(timestamp.seconds.low * 1000).toISOString()\n`;
+    code += `      };\n`;
+    code += `      \n`;
+    code += `      console.log('DEBUG: Participante criado:', JSON.stringify(participant));\n`;
+    code += `      await ctx.stub.putState(participant.id, Buffer.from(JSON.stringify(participant)));\n`;
+    code += `      console.log('DEBUG: Participante salvo com ID:', participant.id);\n`;
+    code += `      \n`;
+    code += `      return participant;\n`;
+    code += `    } catch (error) {\n`;
+    code += `      console.error('ERRO em ${funcName}:', error);\n`;
+    code += `      throw new Error(\`Falha ao criar participante: \${error.message}\`);\n`;
+    code += `    }\n`;
     code += `  }\n\n`;
   });
 
-  // Ativos
-  assetArray.forEach(asset => {
-    const assetName = asset.name || 'UnnamedAsset';
-    const funcName = `create${assetName.replace(/\s+/g, '')}`;
-    code += `  async ${funcName}(ctx) {\n`;
-    code += `    const asset = {\n`;
-    code += `      id: '${asset.id}',\n`;
-    code += `      name: '${asset.name}'\n`;
-    code += `    };\n`;
-    code += `    await ctx.stub.putState('${asset.id}', Buffer.from(JSON.stringify(asset)));\n`;
-    code += `    return JSON.stringify(asset);\n`;
+  // Método para listar todos os participantes
+  code += `  async getAllParticipants(ctx) {\n`;
+  code += `    try {\n`;
+  code += `      console.log('DEBUG: Iniciando getAllParticipants');\n`;
+  code += `      const allResults = [];\n`;
+  code += `      \n`;
+  code += `      console.log('DEBUG: Iniciando getStateByRange');\n`;
+  code += `      const iterator = await ctx.stub.getStateByRange('', '');\n`;
+  code += `      console.log('DEBUG: Iterator criado');\n`;
+  code += `      \n`;
+  code += `      try {\n`;
+  code += `        let count = 0;\n`;
+  code += `        while (true) {\n`;
+  code += `          console.log('DEBUG: Iteração', count++);\n`;
+  code += `          const res = await iterator.next();\n`;
+  code += `          \n`;
+  code += `          if (res.done) {\n`;
+  code += `            console.log('DEBUG: Iterator finalizado após', count, 'iterações');\n`;
+  code += `            break;\n`;
+  code += `          }\n`;
+  code += `          \n`;
+  code += `          if (res.value && res.value.value) {\n`;
+  code += `            console.log('DEBUG: Valor encontrado:', res.value.key);\n`;
+  code += `            try {\n`;
+  code += `              const strValue = res.value.value.toString('utf8');\n`;
+  code += `              console.log('DEBUG: Valor como string:', strValue);\n`;
+  code += `              \n`;
+  code += `              const record = JSON.parse(strValue);\n`;
+  code += `              console.log('DEBUG: Registo convertido:', JSON.stringify(record));\n`;
+  code += `              \n`;
+  code += `              if (record.docType === 'participant') {\n`;
+  code += `                console.log('DEBUG: Participante encontrado:', JSON.stringify(record));\n`;
+  code += `                allResults.push(record);\n`;
+  code += `              } else {\n`;
+  code += `                console.log('DEBUG: Registo não é participante, docType:', record.docType);\n`;
+  code += `              }\n`;
+  code += `            } catch (err) {\n`;
+  code += `              console.error('Erro ao processar Registo:', err);\n`;
+  code += `            }\n`;
+  code += `          }\n`;
+  code += `        }\n`;
+  code += `      } finally {\n`;
+  code += `        console.log('DEBUG: Fechando iterator');\n`;
+  code += `        await iterator.close();\n`;
+  code += `      }\n`;
+  code += `      \n`;
+  code += `      console.log('DEBUG: Total de participantes encontrados:', allResults.length);\n`;
+  code += `      return JSON.stringify(allResults);\n`;
+  code += `      \n`;
+  code += `    } catch (error) {\n`;
+  code += `      console.error('ERRO em getAllParticipants:', error);\n`;
+  code += `      throw new Error(\`Falha ao buscar participantes: \${error.message}\`);\n`;
+  code += `    }\n`;
+    code += `  }\n\n`;
+
+  // Método InitLedger
+  code += `  async InitLedger(ctx) {\n`;
+  code += `    console.log('DEBUG: Iniciando InitLedger');\n`;
+  code += `    \n`;
+  code += `    try {\n`;
+  participantArray.forEach(participant => {
+    const funcName = `create${participant.name.replace(/\s+/g, '')}`;
+    code += `      console.log('DEBUG: Criando ${participant.name} inicial');\n`;
+    code += `      const ${participant.name.replace(/\s+/g, '').toLowerCase()} = await this.${funcName}(ctx);\n`;
+    code += `      console.log('DEBUG: ${participant.name} criado:', ${participant.name.replace(/\s+/g, '').toLowerCase()});\n`;
+    code += `\n`;
+  });
+  code += `      console.log('DEBUG: Buscando todos os participantes');\n`;
+  code += `      const participantes = await this.getAllParticipants(ctx);\n`;
+  code += `      console.log('DEBUG: Participantes encontrados:', participantes);\n`;
+  code += `      \n`;
+  
+  // Adicionar inicialização dos datastores
+  assetArray.forEach(datastore => {
+    const datastoreName = datastore.name.replace(/\s+/g, '');
+    const datastoreNameCapitalized = datastoreName.charAt(0).toUpperCase() + datastoreName.slice(1);
+    code += `      console.log('DEBUG: Inicializando datastore ${datastore.name}');\n`;
+    code += `      const ${datastoreName.toLowerCase()}Info = await this.init${datastoreNameCapitalized}Datastore(ctx);\n`;
+    code += `      console.log('DEBUG: Datastore ${datastore.name} inicializado:', ${datastoreName.toLowerCase()}Info);\n`;
+    code += `\n`;
+  });
+  
+  code += `      console.log('DEBUG: Ledger inicializado com sucesso');\n`;
+  code += `      return participantes;\n`;
+  code += `    } catch (error) {\n`;
+  code += `      console.error('ERRO em InitLedger:', error);\n`;
+  code += `      throw new Error(\`Falha ao inicializar ledger: \${error.message}\`);\n`;
+  code += `    }\n`;
+  code += `  }\n\n`;
+
+  // Datastores - Métodos específicos para cada datastore
+  assetArray.forEach(datastore => {
+    const datastoreName = datastore.name.replace(/\s+/g, '');
+    const datastoreNameCapitalized = datastoreName.charAt(0).toUpperCase() + datastoreName.slice(1);
+    
+    // Método para inicializar datastore
+    code += `  async init${datastoreNameCapitalized}Datastore(ctx) {\n`;
+    code += `    try {\n`;
+    code += `      console.log('DEBUG: Inicializando datastore ${datastore.name}');\n`;
+    code += `      const timestamp = ctx.stub.getTxTimestamp();\n`;
+    code += `      \n`;
+    code += `      const datastoreInfo = {\n`;
+    code += `        id: '${datastore.id}',\n`;
+    code += `        name: '${datastore.name}',\n`;
+    code += `        docType: 'datastoreInfo',\n`;
+    code += `        tipo: 'datastore',\n`;
+    code += `        inicializado: true,\n`;
+    code += `        dataInicializacao: new Date(timestamp.seconds.low * 1000).toISOString(),\n`;
+    code += `        totalRegistos: 0\n`;
+    code += `      };\n`;
+    code += `      \n`;
+    code += `      console.log('DEBUG: Datastore info criado:', JSON.stringify(datastoreInfo));\n`;
+    code += `      await ctx.stub.putState('${datastore.id}_INFO', Buffer.from(JSON.stringify(datastoreInfo)));\n`;
+    code += `      \n`;
+    code += `      return datastoreInfo;\n`;
+    code += `    } catch (error) {\n`;
+    code += `      console.error('ERRO em init${datastoreNameCapitalized}Datastore:', error);\n`;
+    code += `      throw new Error(\`Falha ao inicializar datastore ${datastore.name}: \${error.message}\`);\n`;
+    code += `    }\n`;
+    code += `  }\n\n`;
+    
+    // Método para obter informações do datastore
+    code += `  async get${datastoreNameCapitalized}Info(ctx) {\n`;
+    code += `    try {\n`;
+    code += `      console.log('DEBUG: Obtendo informações do datastore ${datastore.name}');\n`;
+    code += `      \n`;
+    code += `      const datastoreInfoBytes = await ctx.stub.getState('${datastore.id}_INFO');\n`;
+    code += `      let datastoreInfo;\n`;
+    code += `      \n`;
+    code += `      if (!datastoreInfoBytes || datastoreInfoBytes.length === 0) {\n`;
+    code += `        // Se não existir, inicializar automaticamente\n`;
+    code += `        datastoreInfo = await this.init${datastoreNameCapitalized}Datastore(ctx);\n`;
+    code += `      } else {\n`;
+    code += `        datastoreInfo = JSON.parse(datastoreInfoBytes.toString());\n`;
+    code += `      }\n`;
+    code += `      \n`;
+    code += `      // Calcular o total real de Registos no ledger\n`;
+    code += `      console.log('DEBUG: Calculando total real de Registos do datastore ${datastore.name}...');\n`;
+    code += `      let totalRegistos = 0;\n`;
+    code += `      \n`;
+    code += `      const iterator = await ctx.stub.getStateByRange('', '');\n`;
+    code += `      try {\n`;
+    code += `        while (true) {\n`;
+    code += `          const res = await iterator.next();\n`;
+    code += `          \n`;
+    code += `          if (res.done) {\n`;
+    code += `            break;\n`;
+    code += `          }\n`;
+    code += `          \n`;
+    code += `          if (res.value && res.value.value) {\n`;
+    code += `            try {\n`;
+    code += `              const strValue = res.value.value.toString('utf8');\n`;
+    code += `              const record = JSON.parse(strValue);\n`;
+    code += `              \n`;
+    code += `              // Filtrar Registos baseado no tipo do datastore\n`;
+    if (datastore.name.toLowerCase().includes('encomenda')) {
+      code += `              if (record.docType === 'encomenda' || record.docType === 'pedidoEncomenda') {\n`;
+    } else if (datastore.name.toLowerCase().includes('fatura')) {
+      code += `              if (record.docType === 'fatura') {\n`;
+    } else {
+      code += `              if (record.datastoreId === '${datastore.id}' || record.docType === '${datastore.name.toLowerCase()}') {\n`;
+    }
+    code += `                totalRegistos++;\n`;
+    code += `              }\n`;
+    code += `            } catch (err) {\n`;
+    code += `              console.error('Erro ao processar Registo para contagem:', err);\n`;
+    code += `            }\n`;
+    code += `          }\n`;
+    code += `        }\n`;
+    code += `      } finally {\n`;
+    code += `        await iterator.close();\n`;
+    code += `      }\n`;
+    code += `      \n`;
+    code += `      // Atualizar o totalRegistos com o valor real\n`;
+    code += `      datastoreInfo.totalRegistos = totalRegistos;\n`;
+    code += `      datastoreInfo.ultimaVerificacao = new Date(ctx.stub.getTxTimestamp().seconds.low * 1000).toISOString();\n`;
+    code += `      \n`;
+    code += `      console.log('DEBUG: Total real de Registos encontrados no datastore ${datastore.name}:', totalRegistos);\n`;
+    code += `      console.log('DEBUG: Informações do datastore atualizadas:', JSON.stringify(datastoreInfo));\n`;
+    code += `      \n`;
+    code += `      // Salvar informações atualizadas\n`;
+    code += `      await ctx.stub.putState('${datastore.id}_INFO', Buffer.from(JSON.stringify(datastoreInfo)));\n`;
+    code += `      \n`;
+    code += `      return datastoreInfo;\n`;
+    code += `    } catch (error) {\n`;
+    code += `      console.error('ERRO em get${datastoreNameCapitalized}Info:', error);\n`;
+    code += `      throw new Error(\`Falha ao obter informações do datastore ${datastore.name}: \${error.message}\`);\n`;
+    code += `    }\n`;
+    code += `  }\n\n`;
+    
+    // Método para listar todos os Registos do datastore
+    code += `  async getAll${datastoreNameCapitalized}(ctx) {\n`;
+    code += `    try {\n`;
+    code += `      console.log('DEBUG: Listando todos os Registos do datastore ${datastore.name}');\n`;
+    code += `      const allResults = [];\n`;
+    code += `      \n`;
+    code += `      const iterator = await ctx.stub.getStateByRange('', '');\n`;
+    code += `      \n`;
+    code += `      try {\n`;
+    code += `        while (true) {\n`;
+    code += `          const res = await iterator.next();\n`;
+    code += `          \n`;
+    code += `          if (res.done) {\n`;
+    code += `            break;\n`;
+    code += `          }\n`;
+    code += `          \n`;
+    code += `          if (res.value && res.value.value) {\n`;
+    code += `            try {\n`;
+    code += `              const strValue = res.value.value.toString('utf8');\n`;
+    code += `              const record = JSON.parse(strValue);\n`;
+    code += `              \n`;
+    code += `              // Filtrar Registos baseado no tipo do datastore\n`;
+    if (datastore.name.toLowerCase().includes('encomenda')) {
+      code += `              if (record.docType === 'encomenda' || record.docType === 'pedidoEncomenda') {\n`;
+    } else if (datastore.name.toLowerCase().includes('fatura')) {
+      code += `              if (record.docType === 'fatura') {\n`;
+    } else {
+      code += `              if (record.datastoreId === '${datastore.id}' || record.docType === '${datastore.name.toLowerCase()}') {\n`;
+    }
+    code += `                allResults.push(record);\n`;
+    code += `              }\n`;
+    code += `            } catch (err) {\n`;
+    code += `              console.error('Erro ao processar Registo:', err);\n`;
+    code += `            }\n`;
+    code += `          }\n`;
+    code += `        }\n`;
+    code += `      } finally {\n`;
+    code += `        await iterator.close();\n`;
+    code += `      }\n`;
+    code += `      \n`;
+    code += `      console.log('DEBUG: Total de Registos encontrados no datastore ${datastore.name}:', allResults.length);\n`;
+    code += `      return JSON.stringify(allResults);\n`;
+    code += `      \n`;
+    code += `    } catch (error) {\n`;
+    code += `      console.error('ERRO em getAll${datastoreNameCapitalized}:', error);\n`;
+    code += `      throw new Error(\`Falha ao listar Registos do datastore ${datastore.name}: \${error.message}\`);\n`;
+    code += `    }\n`;
     code += `  }\n\n`;
   });
 
@@ -502,74 +819,300 @@ function generateChaincode(taskArray, participantArray, assetArray, contractName
   taskArray.forEach(task => {
     const taskName = task.name ? task.name.replace(/\s+/g, '') : 'UnnamedTask';
     const label = task.name || 'Tarefa BPMN';
+    const datastoreId = task.datastores; // ID do datastore das ligações BPMN
 
-    if (taskName.toLowerCase().includes('criar') && taskName.toLowerCase().includes('encomenda')) {
-      code += `  async ${taskName}(ctx) {\n`;
-      code += `    const id = uuidv4();\n`;
-      code += `    const timestamp = new Date().toISOString();\n`;
-      code += `    const obj = {\n`;
-      code += `      id,\n`;
-      code += `      tipo: 'Encomenda',\n`;
-      code += `      dataCriacao: timestamp,\n`;
-      code += `      estado: 'Criada'\n`;
-      code += `    };\n`;
-      code += `    await ctx.stub.putState(id, Buffer.from(JSON.stringify(obj)));\n`;
-      code += `    return JSON.stringify(obj);\n`;
+    if (taskName.toLowerCase().includes('pedido') && taskName.toLowerCase().includes('encomenda')) {
+      code += `  async CriarPedidoEncomenda(ctx, produtos, detalhesEntrega) {\n`;
+      code += `    try {\n`;
+      code += `      console.log('DEBUG: Iniciando CriarPedidoEncomenda');\n`;
+      code += `      const timestamp = ctx.stub.getTxTimestamp();\n`;
+      code += `      const timestampStr = timestamp.seconds.toString();\n`;
+      code += `\n`;
+      code += `      const pedidoEncomenda = {\n`;
+      code += `        id: 'PedidoEncomenda_' + timestampStr,\n`;
+      code += `        docType: 'pedidoEncomenda',\n`;
+      if (datastoreId) {
+        code += `        datastoreId: '${datastoreId}',\n`;
+      }
+      code += `        participantId: 'Participant_Org2_' + timestampStr,\n`;
+      code += `        estado: 'PENDENTE',\n`;
+      code += `        produtos: produtos || [],\n`;
+      code += `        detalhesEntrega: detalhesEntrega || {},\n`;
+      code += `        dataCriacao: new Date(timestamp.seconds.low * 1000).toISOString()\n`;
+      code += `      };\n`;
+      code += `      console.log('DEBUG: Pedido de Encomenda criado:', JSON.stringify(pedidoEncomenda));\n`;
+      code += `\n`;
+      code += `      await ctx.stub.putState(pedidoEncomenda.id, Buffer.from(JSON.stringify(pedidoEncomenda)));\n`;
+      if (datastoreId) {
+        code += `      \n`;
+        code += `      // Incrementar contador do datastore\n`;
+        code += `      await this.incrementDatastoreCount(ctx, '${datastoreId}');\n`;
+      }
+      code += `      return pedidoEncomenda;\n`;
+      code += `    } catch (error) {\n`;
+      code += `      console.error('ERRO em CriarPedidoEncomenda:', error);\n`;
+      code += `      throw new Error(\`Falha ao criar pedido de encomenda: \${error.message}\`);\n`;
+      code += `    }\n`;
+      code += `  }\n\n`;
+
+    } else if (taskName.toLowerCase().includes('criar') && taskName.toLowerCase().includes('encomenda')) {
+      code += `  async ${taskName}(ctx, pedidoEncomendaId) {\n`;
+      code += `    try {\n`;
+      code += `      console.log('DEBUG: Iniciando ${taskName}');\n`;
+      code += `      const timestamp = ctx.stub.getTxTimestamp();\n`;
+      code += `      const timestampStr = timestamp.seconds.toString();\n`;
+      code += `\n`;
+      code += `      const pedidoEncomendaBytes = await ctx.stub.getState(pedidoEncomendaId);\n`;
+      code += `      if (!pedidoEncomendaBytes || pedidoEncomendaBytes.length === 0) {\n`;
+      code += `        throw new Error(\`Pedido de encomenda \${pedidoEncomendaId} não encontrado\`);\n`;
+      code += `      }\n`;
+      code += `      const pedidoEncomenda = JSON.parse(pedidoEncomendaBytes.toString());\n`;
+      code += `\n`;
+      code += `      const encomenda = {\n`;
+      code += `        id: 'Encomenda_' + timestampStr,\n`;
+      code += `        docType: 'encomenda',\n`;
+      if (datastoreId) {
+        code += `        datastoreId: '${datastoreId}',\n`;
+      }
+      code += `        pedidoEncomendaId: pedidoEncomendaId,\n`;
+      code += `        clienteId: pedidoEncomenda.participantId,\n`;
+      code += `        processadoPorId: 'Participant_Org1_' + timestampStr,\n`;
+      code += `        fornecedorId: 'Participant_Fornecedor_' + timestampStr,\n`;
+      code += `        estado: 'CRIADA',\n`;
+      code += `        produtos: pedidoEncomenda.produtos,\n`;
+      code += `        detalhesEntrega: pedidoEncomenda.detalhesEntrega,\n`;
+      code += `        dataCriacao: new Date(timestamp.seconds.low * 1000).toISOString()\n`;
+      code += `      };\n`;
+      code += `      console.log('DEBUG: Encomenda criada:', JSON.stringify(encomenda));\n`;
+      code += `\n`;
+      code += `      pedidoEncomenda.estado = 'PROCESSADO';\n`;
+      code += `      await ctx.stub.putState(pedidoEncomendaId, Buffer.from(JSON.stringify(pedidoEncomenda)));\n`;
+      code += `\n`;
+      code += `      console.log('DEBUG: Tentando salvar encomenda no ledger com ID:', encomenda.id);\n`;
+      code += `      await ctx.stub.putState(encomenda.id, Buffer.from(JSON.stringify(encomenda)));\n`;
+      code += `      console.log('DEBUG: Encomenda salva com sucesso no ledger!');\n`;
+      if (datastoreId) {
+        code += `      \n`;
+        code += `      // Incrementar contador do datastore\n`;
+        code += `      await this.incrementDatastoreCount(ctx, '${datastoreId}');\n`;
+      }
+      code += `      \n`;
+      code += `      return encomenda;\n`;
+      code += `    } catch (error) {\n`;
+      code += `      console.error('ERRO em ${taskName}:', error);\n`;
+      code += `      throw new Error(\`Falha ao criar encomenda: \${error.message}\`);\n`;
+      code += `    }\n`;
       code += `  }\n\n`;
 
     } else if (taskName.toLowerCase().includes('criar') && taskName.toLowerCase().includes('fatura')) {
       code += `  async ${taskName}(ctx, encomendaId) {\n`;
-      code += `    const encomenda = await ctx.stub.getState(encomendaId);\n`;
-      code += `    if (!encomenda || encomenda.length === 0) {\n`;
-      code += `      throw new Error("Encomenda associada não existe.");\n`;
-      code += `    }\n\n`;
-      code += `    const id = uuidv4();\n`;
-      code += `    const timestamp = new Date().toISOString();\n`;
-      code += `    const obj = {\n`;
-      code += `      id,\n`;
-      code += `      tipo: 'Fatura',\n`;
-      code += `      encomendaId,\n`;
-      code += `      dataCriacao: timestamp,\n`;
-      code += `      estado: 'Criada'\n`;
-      code += `    };\n`;
-      code += `    await ctx.stub.putState(id, Buffer.from(JSON.stringify(obj)));\n`;
-      code += `    return JSON.stringify(obj);\n`;
+      code += `    try {\n`;
+      code += `      console.log('DEBUG: Iniciando ${taskName} com encomendaId:', encomendaId);\n`;
+      code += `      \n`;
+      code += `      const encomendaBytes = await ctx.stub.getState(encomendaId);\n`;
+      code += `      if (!encomendaBytes || encomendaBytes.length === 0) {\n`;
+      code += `        throw new Error(\`Encomenda \${encomendaId} não encontrada\`);\n`;
+      code += `      }\n`;
+      code += `      \n`;
+      code += `      const encomenda = JSON.parse(encomendaBytes.toString());\n`;
+      code += `      console.log('DEBUG: Encomenda encontrada:', JSON.stringify(encomenda));\n`;
+      code += `      \n`;
+      code += `      const timestamp = ctx.stub.getTxTimestamp();\n`;
+      code += `      const timestampStr = timestamp.seconds.toString();\n`;
+      code += `      \n`;
+      code += `      const fatura = {\n`;
+      code += `        id: 'Fatura_' + timestampStr,\n`;
+      code += `        docType: 'fatura',\n`;
+      if (datastoreId) {
+        code += `        datastoreId: '${datastoreId}',\n`;
+      }
+      code += `        encomendaId: encomendaId,\n`;
+      code += `        clienteId: encomenda.clienteId,\n`;
+      code += `        fornecedorId: encomenda.fornecedorId,\n`;
+      code += `        estado: 'CRIADA',\n`;
+      code += `        valor: 100.00,\n`;
+      code += `        dataCriacao: new Date(timestamp.seconds.low * 1000).toISOString(),\n`;
+      code += `        produtos: encomenda.produtos\n`;
+      code += `      };\n`;
+      code += `      \n`;
+      code += `      console.log('DEBUG: Fatura criada:', JSON.stringify(fatura));\n`;
+      code += `      await ctx.stub.putState(fatura.id, Buffer.from(JSON.stringify(fatura)));\n`;
+      if (datastoreId) {
+        code += `      \n`;
+        code += `      // Incrementar contador do datastore\n`;
+        code += `      await this.incrementDatastoreCount(ctx, '${datastoreId}');\n`;
+      }
+      code += `      return JSON.stringify(fatura);\n`;
+      code += `      \n`;
+      code += `    } catch (error) {\n`;
+      code += `      console.error('ERRO em ${taskName}:', error);\n`;
+      code += `      throw new Error(\`Falha ao criar fatura: \${error.message}\`);\n`;
+      code += `    }\n`;
       code += `  }\n\n`;
 
     } else if (taskName.toLowerCase().includes('listar') && taskName.toLowerCase().includes('encomenda')) {
-      code += `  async ${taskName}(ctx) {\n`;
-      code += `    const allResults = [];\n`;
-      code += `    const iterator = await ctx.stub.getStateByRange('', '');\n`;
-      code += `    for await (const res of iterator) {\n`;
-      code += `      const record = JSON.parse(res.value.toString());\n`;
-      code += `      if (record.tipo === 'Encomenda') {\n`;
-      code += `        allResults.push(record);\n`;
+      code += `  async ListarEncomendas(ctx) {\n`;
+      code += `    try {\n`;
+      code += `      console.log('DEBUG: Iniciando ListarEncomendas');\n`;
+      code += `      const allResults = [];\n`;
+      code += `      \n`;
+      code += `      console.log('DEBUG: Iniciando getStateByRange');\n`;
+      code += `      const iterator = await ctx.stub.getStateByRange('', '');\n`;
+      code += `      console.log('DEBUG: Iterator criado');\n`;
+      code += `      \n`;
+      code += `      try {\n`;
+      code += `        let count = 0;\n`;
+      code += `        while (true) {\n`;
+      code += `          console.log('DEBUG: Iteração', count++);\n`;
+      code += `          const res = await iterator.next();\n`;
+      code += `          \n`;
+      code += `          if (res.done) {\n`;
+      code += `            console.log('DEBUG: Iterator finalizado após', count, 'iterações');\n`;
+      code += `            break;\n`;
+      code += `          }\n`;
+      code += `          \n`;
+      code += `          if (res.value && res.value.value) {\n`;
+      code += `            console.log('DEBUG: Valor encontrado:', res.value.key);\n`;
+      code += `            try {\n`;
+      code += `              const strValue = res.value.value.toString('utf8');\n`;
+      code += `              console.log('DEBUG: Valor como string:', strValue);\n`;
+      code += `              \n`;
+      code += `              const record = JSON.parse(strValue);\n`;
+      code += `              console.log('DEBUG: Registo convertido:', JSON.stringify(record));\n`;
+      code += `              \n`;
+      code += `              if (record.docType === 'encomenda') {\n`;
+      if (datastoreId) {
+        code += `                // Verificar também o datastoreId se disponível\n`;
+        code += `                if (!record.datastoreId || record.datastoreId === '${datastoreId}') {\n`;
+        code += `                  console.log('DEBUG: Encomenda encontrada:', JSON.stringify(record));\n`;
+        code += `                  allResults.push(record);\n`;
+        code += `                }\n`;
+      } else {
+        code += `                console.log('DEBUG: Encomenda encontrada:', JSON.stringify(record));\n`;
+        code += `                allResults.push(record);\n`;
+      }
+      code += `              } else {\n`;
+      code += `                console.log('DEBUG: Registo não é encomenda, docType:', record.docType);\n`;
+      code += `              }\n`;
+      code += `            } catch (err) {\n`;
+      code += `              console.error('Erro ao processar Registo:', err);\n`;
+      code += `            }\n`;
+      code += `          }\n`;
+      code += `        }\n`;
+      code += `      } finally {\n`;
+      code += `        console.log('DEBUG: Fechando iterator');\n`;
+      code += `        await iterator.close();\n`;
       code += `      }\n`;
+      code += `      \n`;
+      code += `      console.log('DEBUG: Total de encomendas encontradas:', allResults.length);\n`;
+      code += `      return JSON.stringify(allResults);\n`;
+      code += `      \n`;
+      code += `    } catch (error) {\n`;
+      code += `      console.error('ERRO em ListarEncomendas:', error);\n`;
+      code += `      throw new Error(\`Falha ao buscar encomendas: \${error.message}\`);\n`;
       code += `    }\n`;
-      code += `    return JSON.stringify(allResults);\n`;
       code += `  }\n\n`;
 
     } else if (taskName.toLowerCase().includes('listar') && taskName.toLowerCase().includes('fatura')) {
-      code += `  async ${taskName}(ctx) {\n`;
-      code += `    const allResults = [];\n`;
-      code += `    const iterator = await ctx.stub.getStateByRange('', '');\n`;
-      code += `    for await (const res of iterator) {\n`;
-      code += `      const record = JSON.parse(res.value.toString());\n`;
-      code += `      if (record.tipo === 'Fatura') {\n`;
-      code += `        allResults.push(record);\n`;
+      code += `  async ListarFaturas(ctx) {\n`;
+      code += `    try {\n`;
+      code += `      console.log('DEBUG: Iniciando ListarFaturas');\n`;
+      code += `      const allResults = [];\n`;
+      code += `      \n`;
+      code += `      console.log('DEBUG: Iniciando getStateByRange');\n`;
+      code += `      const iterator = await ctx.stub.getStateByRange('', '');\n`;
+      code += `      console.log('DEBUG: Iterator criado');\n`;
+      code += `      \n`;
+      code += `      try {\n`;
+      code += `        let count = 0;\n`;
+      code += `        while (true) {\n`;
+      code += `          console.log('DEBUG: Iteração', count++);\n`;
+      code += `          const res = await iterator.next();\n`;
+      code += `          \n`;
+      code += `          if (res.done) {\n`;
+      code += `            console.log('DEBUG: Iterator finalizado após', count, 'iterações');\n`;
+      code += `            break;\n`;
+      code += `          }\n`;
+      code += `          \n`;
+      code += `          if (res.value && res.value.value) {\n`;
+      code += `            console.log('DEBUG: Valor encontrado:', res.value.key);\n`;
+      code += `            try {\n`;
+      code += `              const strValue = res.value.value.toString('utf8');\n`;
+      code += `              console.log('DEBUG: Valor como string:', strValue);\n`;
+      code += `              \n`;
+      code += `              const record = JSON.parse(strValue);\n`;
+      code += `              console.log('DEBUG: Registo convertido:', JSON.stringify(record));\n`;
+      code += `              \n`;
+      code += `              if (record.docType === 'fatura') {\n`;
+      if (datastoreId) {
+        code += `                // Verificar também o datastoreId se disponível\n`;
+        code += `                if (!record.datastoreId || record.datastoreId === '${datastoreId}') {\n`;
+        code += `                  console.log('DEBUG: Fatura encontrada:', JSON.stringify(record));\n`;
+        code += `                  allResults.push(record);\n`;
+        code += `                }\n`;
+      } else {
+        code += `                console.log('DEBUG: Fatura encontrada:', JSON.stringify(record));\n`;
+        code += `                allResults.push(record);\n`;
+      }
+      code += `              } else {\n`;
+      code += `                console.log('DEBUG: Registo não é fatura, docType:', record.docType);\n`;
+      code += `              }\n`;
+      code += `            } catch (err) {\n`;
+      code += `              console.error('Erro ao processar Registo:', err);\n`;
+      code += `            }\n`;
+      code += `          }\n`;
+      code += `        }\n`;
+      code += `      } finally {\n`;
+      code += `        console.log('DEBUG: Fechando iterator');\n`;
+      code += `        await iterator.close();\n`;
       code += `      }\n`;
+      code += `      \n`;
+      code += `      console.log('DEBUG: Total de faturas encontradas:', allResults.length);\n`;
+      code += `      return JSON.stringify(allResults);\n`;
+      code += `      \n`;
+      code += `    } catch (error) {\n`;
+      code += `      console.error('ERRO em ListarFaturas:', error);\n`;
+      code += `      throw new Error(\`Falha ao buscar faturas: \${error.message}\`);\n`;
       code += `    }\n`;
-      code += `    return JSON.stringify(allResults);\n`;
       code += `  }\n\n`;
 
     } else {
       code += `  async ${taskName}(ctx) {\n`;
-      code += `    // ${label}\n`;
-      code += `    console.log('${label} executada.');\n`;
-      code += `    return true;\n`;
+      code += `    try {\n`;
+      code += `      console.log('DEBUG: Executando ${label}');\n`;
+      if (datastoreId) {
+        code += `      console.log('DEBUG: Associado ao datastore: ${datastoreId}');\n`;
+      }
+      code += `      return { message: '${label} executada com sucesso' };\n`;
+      code += `    } catch (error) {\n`;
+      code += `      console.error('ERRO em ${taskName}:', error);\n`;
+      code += `      throw new Error(\`Falha ao executar ${label}: \${error.message}\`);\n`;
+      code += `    }\n`;
       code += `  }\n\n`;
     }
   });
+
+  // Método auxiliar para incrementar contador do datastore
+  code += `  // Método auxiliar para incrementar contador do datastore\n`;
+  code += `  async incrementDatastoreCount(ctx, datastoreId) {\n`;
+  code += `    try {\n`;
+  code += `      if (!datastoreId) return;\n`;
+  code += `      \n`;
+  code += `      const infoKey = datastoreId + '_INFO';\n`;
+  code += `      const datastoreInfoBytes = await ctx.stub.getState(infoKey);\n`;
+  code += `      \n`;
+  code += `      if (datastoreInfoBytes && datastoreInfoBytes.length > 0) {\n`;
+  code += `        const datastoreInfo = JSON.parse(datastoreInfoBytes.toString());\n`;
+  code += `        datastoreInfo.totalRegistos = (datastoreInfo.totalRegistos || 0) + 1;\n`;
+  code += `        datastoreInfo.ultimaAtualizacao = new Date(ctx.stub.getTxTimestamp().seconds.low * 1000).toISOString();\n`;
+  code += `        \n`;
+  code += `        await ctx.stub.putState(infoKey, Buffer.from(JSON.stringify(datastoreInfo)));\n`;
+  code += `        console.log('DEBUG: Contador do datastore', datastoreId, 'incrementado para', datastoreInfo.totalRegistos);\n`;
+  code += `      }\n`;
+  code += `    } catch (error) {\n`;
+  code += `      console.error('ERRO ao incrementar contador do datastore:', error);\n`;
+  code += `    }\n`;
+  code += `  }\n\n`;
 
   code += `}\n\nmodule.exports = ${contractName};\n`;
 
@@ -583,4 +1126,3 @@ function generateChaincode(taskArray, participantArray, assetArray, contractName
 
 </script>
     
-</html>

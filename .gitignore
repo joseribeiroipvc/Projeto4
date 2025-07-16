@@ -8,8 +8,8 @@ package-lock.json
 
 # Project specific
 SmartContractHyperledger/node_modules/
+modeler/node_modules/
 fablo-rest/
-
 # Environment variables
 .env
 .env.local
