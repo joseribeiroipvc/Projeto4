@@ -32,7 +32,6 @@ ehthumbs.db
 Thumbs.db
 
 # Hyperledger Fabric specific
-fabric-samples/
 wallet/
 crypto-config/
 channel-artifacts/

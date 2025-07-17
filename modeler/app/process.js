@@ -184,7 +184,7 @@ var assosstxt = "";
      console.log("Datastores:", assetArray.map(d => d.name).join(", "));
      console.log("Tarefas:", taskArray.map(t => t.name).join(", "));
      console.log("=====================\n");
-  
+
 
 /*   
 /
@@ -401,10 +401,8 @@ function generateChaincode(taskArray, participantArray, assetArray, contractName
     code += `const { Contract } = require('fabric-contract-api');\n\n`;
   code += `class ${contractName} extends Contract {\n\n`;
 
-    // ... resto do código igual (sem alteração de lógica)
-    // Aqui podes adaptar nomes de variáveis, comentários e strings de interface para português de Portugal, caso haja algum termo mais relevante.
-  
-    // No final:
+    
+    
   code += `}\n\nmodule.exports = ${contractName};\n`;
 
   return code;

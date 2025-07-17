@@ -77,7 +77,7 @@
           <button id="buttontask">Delete selected row</button>
         </div>
       </div>
-      <!--Gerar conttrato button
+      <!--Gerar contrato button
       
       txt (class assets/partic....)
       class contrato (tem tasks forma metodos) que que usa as acima
@@ -189,7 +189,6 @@ var assosstxt = "";
       }
     }
 
-    // Removi a lógica automática - apenas associações explícitas do BPMN serão processadas
 
     // Fallback para associations (método antigo)
     var xassos = xmlDoc.getElementsByTagName("association");
@@ -551,7 +550,7 @@ function generateChaincode(taskArray, participantArray, assetArray, contractName
     
     code += `  async ${funcName}(ctx) {\n`;
     code += `    try {\n`;
-    code += `      console.log('DEBUG: Iniciando ${funcName}');\n`;
+    code += `      console.log('DEBUG: A iniciar  ${funcName}');\n`;
     code += `      const timestamp = ctx.stub.getTxTimestamp();\n`;
     code += `      const timestampStr = timestamp.seconds.toString();\n`;
     code += `      \n`;
@@ -565,7 +564,7 @@ function generateChaincode(taskArray, participantArray, assetArray, contractName
     code += `      \n`;
     code += `      console.log('DEBUG: Participante criado:', JSON.stringify(participant));\n`;
     code += `      await ctx.stub.putState(participant.id, Buffer.from(JSON.stringify(participant)));\n`;
-    code += `      console.log('DEBUG: Participante salvo com ID:', participant.id);\n`;
+    code += `      console.log('DEBUG: Participante guardado com ID:', participant.id);\n`;
     code += `      \n`;
     code += `      return participant;\n`;
     code += `    } catch (error) {\n`;
@@ -578,10 +577,10 @@ function generateChaincode(taskArray, participantArray, assetArray, contractName
   // Método para listar todos os participantes
   code += `  async getAllParticipants(ctx) {\n`;
   code += `    try {\n`;
-  code += `      console.log('DEBUG: Iniciando getAllParticipants');\n`;
+  code += `      console.log('DEBUG: A iniciar  getAllParticipants');\n`;
   code += `      const allResults = [];\n`;
   code += `      \n`;
-  code += `      console.log('DEBUG: Iniciando getStateByRange');\n`;
+  code += `      console.log('DEBUG: A iniciar  getStateByRange');\n`;
   code += `      const iterator = await ctx.stub.getStateByRange('', '');\n`;
   code += `      console.log('DEBUG: Iterator criado');\n`;
   code += `      \n`;
@@ -632,17 +631,17 @@ function generateChaincode(taskArray, participantArray, assetArray, contractName
 
   // Método InitLedger
   code += `  async InitLedger(ctx) {\n`;
-  code += `    console.log('DEBUG: Iniciando InitLedger');\n`;
+  code += `    console.log('DEBUG: A iniciar  InitLedger');\n`;
   code += `    \n`;
   code += `    try {\n`;
   participantArray.forEach(participant => {
     const funcName = `create${participant.name.replace(/\s+/g, '')}`;
-    code += `      console.log('DEBUG: Criando ${participant.name} inicial');\n`;
+    code += `      console.log('DEBUG: A criar ${participant.name} inicial');\n`;
     code += `      const ${participant.name.replace(/\s+/g, '').toLowerCase()} = await this.${funcName}(ctx);\n`;
     code += `      console.log('DEBUG: ${participant.name} criado:', ${participant.name.replace(/\s+/g, '').toLowerCase()});\n`;
     code += `\n`;
   });
-  code += `      console.log('DEBUG: Buscando todos os participantes');\n`;
+  code += `      console.log('DEBUG: Á procura de todos os participantes');\n`;
   code += `      const participantes = await this.getAllParticipants(ctx);\n`;
   code += `      console.log('DEBUG: Participantes encontrados:', participantes);\n`;
   code += `      \n`;
@@ -824,7 +823,7 @@ function generateChaincode(taskArray, participantArray, assetArray, contractName
     if (taskName.toLowerCase().includes('pedido') && taskName.toLowerCase().includes('encomenda')) {
       code += `  async CriarPedidoEncomenda(ctx, produtos, detalhesEntrega) {\n`;
       code += `    try {\n`;
-      code += `      console.log('DEBUG: Iniciando CriarPedidoEncomenda');\n`;
+      code += `      console.log('DEBUG: A iniciar  CriarPedidoEncomenda');\n`;
       code += `      const timestamp = ctx.stub.getTxTimestamp();\n`;
       code += `      const timestampStr = timestamp.seconds.toString();\n`;
       code += `\n`;
@@ -858,7 +857,7 @@ function generateChaincode(taskArray, participantArray, assetArray, contractName
     } else if (taskName.toLowerCase().includes('criar') && taskName.toLowerCase().includes('encomenda')) {
       code += `  async ${taskName}(ctx, pedidoEncomendaId) {\n`;
       code += `    try {\n`;
-      code += `      console.log('DEBUG: Iniciando ${taskName}');\n`;
+      code += `      console.log('DEBUG: A iniciar  ${taskName}');\n`;
       code += `      const timestamp = ctx.stub.getTxTimestamp();\n`;
       code += `      const timestampStr = timestamp.seconds.toString();\n`;
       code += `\n`;
@@ -907,7 +906,7 @@ function generateChaincode(taskArray, participantArray, assetArray, contractName
     } else if (taskName.toLowerCase().includes('criar') && taskName.toLowerCase().includes('fatura')) {
       code += `  async ${taskName}(ctx, encomendaId) {\n`;
       code += `    try {\n`;
-      code += `      console.log('DEBUG: Iniciando ${taskName} com encomendaId:', encomendaId);\n`;
+      code += `      console.log('DEBUG: A iniciar  ${taskName} com encomendaId:', encomendaId);\n`;
       code += `      \n`;
       code += `      const encomendaBytes = await ctx.stub.getState(encomendaId);\n`;
       code += `      if (!encomendaBytes || encomendaBytes.length === 0) {\n`;
@@ -953,10 +952,10 @@ function generateChaincode(taskArray, participantArray, assetArray, contractName
     } else if (taskName.toLowerCase().includes('listar') && taskName.toLowerCase().includes('encomenda')) {
       code += `  async ListarEncomendas(ctx) {\n`;
       code += `    try {\n`;
-      code += `      console.log('DEBUG: Iniciando ListarEncomendas');\n`;
+      code += `      console.log('DEBUG: A iniciar  ListarEncomendas');\n`;
       code += `      const allResults = [];\n`;
       code += `      \n`;
-      code += `      console.log('DEBUG: Iniciando getStateByRange');\n`;
+      code += `      console.log('DEBUG: A iniciar  getStateByRange');\n`;
       code += `      const iterator = await ctx.stub.getStateByRange('', '');\n`;
       code += `      console.log('DEBUG: Iterator criado');\n`;
       code += `      \n`;
@@ -1016,10 +1015,10 @@ function generateChaincode(taskArray, participantArray, assetArray, contractName
     } else if (taskName.toLowerCase().includes('listar') && taskName.toLowerCase().includes('fatura')) {
       code += `  async ListarFaturas(ctx) {\n`;
       code += `    try {\n`;
-      code += `      console.log('DEBUG: Iniciando ListarFaturas');\n`;
+      code += `      console.log('DEBUG: A iniciar  ListarFaturas');\n`;
       code += `      const allResults = [];\n`;
       code += `      \n`;
-      code += `      console.log('DEBUG: Iniciando getStateByRange');\n`;
+      code += `      console.log('DEBUG: A iniciar  getStateByRange');\n`;
       code += `      const iterator = await ctx.stub.getStateByRange('', '');\n`;
       code += `      console.log('DEBUG: Iterator criado');\n`;
       code += `      \n`;
